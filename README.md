@@ -4,15 +4,7 @@ An internal developer metrics dashboard running on AWS EKS. Surfaces deployment 
 
 ## Architecture
 
-```
-devpulse-ui  (React/Vite, Nginx)
-      |
-   Ingress (ALB + TLS)
-      |
-devpulse-api (Spring Boot)
-      |
-  Prometheus
-```
+![devpulse architecture](docs/devpulse_architecture_ltr.svg)
 
 Two services deployed into separate Kubernetes namespaces:
 
