@@ -19,6 +19,16 @@ terraform {
       source  = "hashicorp/cloudinit"
       version = "~> 2.3.4"
     }
+
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.6"
+    }
+
+    kubectl = {
+      source  = "alekc/kubectl"
+      version = ">= 2.0.0"
+    }
   }
 
   required_version = "~> 1.3"

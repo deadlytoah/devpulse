@@ -34,6 +34,28 @@ data "aws_eks_cluster_auth" "this" {
   name = data.terraform_remote_state.eks.outputs.cluster_name
 }
 
+provider "kubectl" {
+  host                   = data.aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
+  load_config_file       = false
+}
+
+# ── 1. Gateway API CRDs (upstream release manifest, multi-doc) ──
+data "http" "gateway_api_crds" {
+  url = "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml"
+}
+
+data "kubectl_file_documents" "gateway_api_crds" {
+  content = data.http.gateway_api_crds.response_body
+}
+
+resource "kubectl_manifest" "gateway_api_crds" {
+  for_each          = data.kubectl_file_documents.gateway_api_crds.manifests
+  yaml_body         = each.value
+  server_side_apply = true
+}
+
 # ── Kubernetes add-ons (via Helm) ────────────────────────────────────────────
 
 resource "helm_release" "aws_load_balancer_controller" {
@@ -45,6 +67,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   depends_on = [
     data.aws_eks_cluster.this,
+    kubectl_manifest.gateway_api_crds,
   ]
 
   set {
@@ -76,4 +99,26 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = data.terraform_remote_state.eks.outputs.alb_controller_iam_role_arn
   }
+
+  set {
+    name  = "controllerConfig.featureGates.ALBGatewayAPI"
+    value = "true"
+  }
+}
+
+# GatewayClass for ALB
+resource "kubectl_manifest" "alb_gateway_class" {
+  yaml_body = <<-YAML
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    metadata:
+      name: aws-alb
+    spec:
+      controllerName: gateway.k8s.aws/alb
+  YAML
+
+  depends_on = [
+    kubectl_manifest.gateway_api_crds, # kind must exist
+    helm_release.aws_load_balancer_controller, # controller must be up to accept it
+  ]
 }
