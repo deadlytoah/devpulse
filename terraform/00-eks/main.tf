@@ -43,12 +43,12 @@ module "eks" {
   name               = var.cluster_name
   kubernetes_version = "1.34"
 
-  cluster_endpoint_public_access           = true
+  endpoint_public_access                   = true
   enable_cluster_creator_admin_permissions = true
 
   addons = {
     aws-ebs-csi-driver = {
-      service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
+      service_account_role_arn = module.irsa-ebs-csi.arn
     }
   }
 
@@ -76,12 +76,12 @@ data "aws_iam_policy" "ebs_csi_policy" {
 }
 
 module "irsa-ebs-csi" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.39.0"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  version = "~> 6.8.0"
 
-  role_name = "AmazonEKSTFEBSCSIRole-${var.cluster_name}"
+  name = "AmazonEKSTFEBSCSIRole-${var.cluster_name}"
 
-  role_policy_arns = {
+  policies = {
     ebs_csi = data.aws_iam_policy.ebs_csi_policy.arn
   }
 
@@ -94,10 +94,10 @@ module "irsa-ebs-csi" {
 }
 
 module "irsa-alb" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.39.0"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  version = "~> 6.8.0"
 
-  role_name                           = "${var.cluster_name}-alb-controller"
+  name                                   = "${var.cluster_name}-alb-controller"
   attach_load_balancer_controller_policy = true
 
   oidc_providers = {

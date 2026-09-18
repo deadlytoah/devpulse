@@ -40,5 +40,5 @@ output "oidc_provider_arn" {
 
 output "alb_controller_iam_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller service account"
-  value       = module.irsa-alb.iam_role_arn
+  value       = module.irsa-alb.arn
 }
