@@ -47,6 +47,16 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   addons = {
+    vpc-cni = {
+      before_compute = true
+      most_recent    = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    coredns = {
+      most_recent = true
+    }
     aws-ebs-csi-driver = {
       service_account_role_arn = module.irsa-ebs-csi.arn
     }
