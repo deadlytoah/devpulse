@@ -60,6 +60,9 @@ module "eks" {
     aws-ebs-csi-driver = {
       service_account_role_arn = module.irsa-ebs-csi.arn
     }
+    eks-pod-identity-agent = {
+      before_compute = true
+    }
   }
 
   vpc_id     = module.vpc.vpc_id
@@ -78,7 +81,6 @@ module "eks" {
     }
   }
 }
-
 
 # https://aws.amazon.com/blogs/containers/amazon-ebs-csi-driver-is-now-generally-available-in-amazon-eks-add-ons/
 data "aws_iam_policy" "ebs_csi_policy" {
