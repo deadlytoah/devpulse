@@ -20,19 +20,14 @@ module "vpc" {
   cidr = "10.16.0.0/16"
   azs  = slice(data.aws_availability_zones.available.names, 0, 3)
 
-  private_subnets = ["10.16.64.0/20", "10.16.80.0/20", "10.16.96.0/20"]
   public_subnets  = ["10.16.16.0/20", "10.16.32.0/20", "10.16.48.0/20"]
 
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
+  map_public_ip_on_launch = true
+  enable_nat_gateway   = false
   enable_dns_hostnames = true
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
-  }
-
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = 1
   }
 }
 
@@ -72,7 +67,7 @@ module "eks" {
   }
 
   vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
+  subnet_ids = module.vpc.public_subnets
 
   eks_managed_node_groups = {
     one = {
@@ -83,7 +78,7 @@ module "eks" {
 
       min_size     = 1
       max_size     = 3
-      desired_size = 2
+      desired_size = 1
     }
   }
 }

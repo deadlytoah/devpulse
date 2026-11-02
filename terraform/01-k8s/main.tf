@@ -106,7 +106,23 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 }
 
-# GatewayClass for ALB
+resource "kubectl_manifest" "alb_lb_config" {
+  yaml_body = <<-YAML
+    apiVersion: gateway.k8s.aws/v1beta1
+    kind: LoadBalancerConfiguration
+    metadata:
+      name: devplus-lb-config
+      namespace: default
+    spec:
+      scheme: internet-facing
+  YAML
+
+  depends_on = [
+    kubectl_manifest.gateway_api_crds,
+    helm_release.aws_load_balancer_controller,
+  ]
+}
+
 resource "kubectl_manifest" "alb_gateway_class" {
   yaml_body = <<-YAML
     apiVersion: gateway.networking.k8s.io/v1
@@ -115,10 +131,12 @@ resource "kubectl_manifest" "alb_gateway_class" {
       name: aws-alb
     spec:
       controllerName: gateway.k8s.aws/alb
+      parametersRef:
+        group: gateway.k8s.aws
+        kind: LoadBalancerConfiguration
+        name: devplus-lb-config
+        namespace: default
   YAML
 
-  depends_on = [
-    kubectl_manifest.gateway_api_crds, # kind must exist
-    helm_release.aws_load_balancer_controller, # controller must be up to accept it
-  ]
+  depends_on = [kubectl_manifest.alb_lb_config]
 }
