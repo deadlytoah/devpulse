@@ -6,16 +6,16 @@
 
 **Date:** 2026-05-13
 
+### Decision
+
+Terraform is used to provision and manage the entire infrastructure stack.
+
 ### Context
 
 Standing up an EKS cluster requires tooling choices. The two most common options are:
 
 - **eksctl** — a purpose-built CLI from Weaveworks/AWS that abstracts EKS cluster creation behind opinionated defaults.
 - **Terraform** — a general-purpose IaC tool that manages AWS resources declaratively via provider APIs.
-
-### Decision
-
-Terraform is used to provision and manage the entire infrastructure stack.
 
 ### Rationale
 
@@ -37,6 +37,14 @@ eksctl is a convenience tool. It handles the cluster creation, but stops there. 
 
 **Date:** 2026-08-27
 
+### Decision
+
+Run both APIs on the one AWS Load Balancer Controller:
+
+- **Use `Gateway` + `HTTPRoute` as the rule of thumb**. Gateway API has clear advantage, and most recent. It is likely to receive the ongoing support by the upstream providers.
+- **Grafana** requires Ingress.
+- **Gateway API CRDs and the `aws-alb` GatewayClass** are installed by Terraform, alongside the controller's `helm_release`. `Gateway` and `HTTPRoute` instances ship with each app's Helm chart.
+
 ### Context
 
 Kubernetes offers two APIs for routing external HTTP(S) traffic into a cluster:
@@ -47,14 +55,6 @@ Kubernetes offers two APIs for routing external HTTP(S) traffic into a cluster:
 The AWS Load Balancer Controller, already installed for ALB provisioning, added GA support for Gateway API in March 2026 (v2.14.0+). It can serve both APIs side by side in the same cluster, so adopting Gateway API does not require a second controller.
 
 However, third-party Helm charts in the stack lag behind. `kube-prometheus-stack` templates an Ingress for Grafana out of the box, but has no equivalent built-in support for `HTTPRoute`.
-
-### Decision
-
-Run both APIs on the one AWS Load Balancer Controller:
-
-- **DevPulse and the golden-path Helm chart** use `Gateway` + `HTTPRoute`.
-- **Grafana** stays on the chart's built-in Ingress.
-- **Gateway API CRDs and the `aws-alb` GatewayClass** are installed by Terraform, alongside the controller's `helm_release`. `Gateway` and `HTTPRoute` instances ship with each app's Helm chart.
 
 ### Rationale
 
